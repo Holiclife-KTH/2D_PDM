@@ -1,0 +1,12 @@
+{
+    "python.analysis.extraPaths": [
+        "./Genesis",
+        "./src"
+    ],
+    "python.autoComplete.extraPaths": [
+        "./Genesis/genesis",
+        "./Genesis/genesis/ext",
+        "./Genesis/genesis/engine",
+        "./src"
+    ]
+}
