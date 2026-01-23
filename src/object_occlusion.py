@@ -18,33 +18,35 @@ args, unknown = parser.parse_known_args()
 
 
 PEN = {
-    f"pen_{i}": f"/home/irol/workspace/genesis_ai/src/asset/USD/pen/Collected_pen_{i}/pen_{i}.usdc"
+    f"pen_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/pen/Collected_pen_{i}/pen_{i}.usdc"
     for i in range(1, 5)
 }
 ERASER = {
-    f"eraser_{i}": f"/home/irol/workspace/genesis_ai/src/asset/USD/eraser/Collected_eraser_{i}/eraser_{i}.usdc"
+    f"eraser_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/eraser/Collected_eraser_{i}/eraser_{i}.usdc"
     for i in range(1, 5)
 }
 BOOK = {
-    f"book_{i}": f"/home/irol/workspace/genesis_ai/src/asset/USD/book/Collected_book_{i}/book_{i}.usdc"
+    f"book_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/book/Collected_book_{i}/book_{i}.usdc"
     for i in range(1, 5)
 }
 NOTEBOOK = {
-    f"notebook_{i}": f"/home/irol/workspace/genesis_ai/src/asset/USD/notebook/Collected_notebook_{i}/notebook_{i}.usdc"
+    f"notebook_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/notebook/Collected_notebook_{i}/notebook_{i}.usdc"
     for i in range(1, 5)
 }
 
 
 class Occlusion_set:
-    path = f"/home/irol/workspace/genesis_ai/src/output/{args.target_name}"
-    if not os.path.exists(path + "/depth_map"):
-        os.makedirs(path + "/depth_map")
-    if not os.path.exists(path + "/rgb_map"):
-        os.makedirs(path + "/rgb_map")
+    path = f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/target"
+    if not os.path.exists(path + "/depth"):
+        os.makedirs(path + "/depth")
+    if not os.path.exists(path + "/rgb"):
+        os.makedirs(path + "/rgb")
+    if not os.path.exists(path + "/seg"):
+        os.makedirs(path + "/seg")
 
     def __init__(self):
         self.scene = gs.Scene(
-            show_viewer=True,
+            show_viewer=False,
             rigid_options=gs.options.RigidOptions(
                 dt=0.001,
             ),
@@ -82,7 +84,7 @@ class Occlusion_set:
 
         self.workspace = self.scene.add_entity(
             morph=gs.morphs.Mesh(
-                file="/home/irol/workspace/genesis_ai/src/asset/USD/drawer.obj",
+                file="/home/irol/workspace/2D_PDM/src/asset/USD/drawer.obj", # change to own path
                 scale=1.0,
                 pos=(0.0, 0.0, 0.05),
                 euler=(0.0, 0.0, 0.0),
@@ -133,7 +135,7 @@ class Occlusion_set:
         count = 0
         x_min, x_max = -0.17, 0.17
         y_min, y_max = -0.17, 0.17
-        step = 0.01
+        step = 0.02
 
         # Start position
         current_x = x_max
@@ -141,8 +143,8 @@ class Occlusion_set:
         z = 0.07  # Keep z constant
 
         # Rotation parameters
-        yaw_step = np.pi / 12  # pi/12 radians (15 degrees)
-        num_rotations = 24  # 2pi / (pi/12) = 24 steps for full rotation
+        yaw_step = np.pi / 6  # pi/6 radians (30 degrees)
+        num_rotations = 12  # 2pi / (pi/6) = 12 steps for full rotation
         current_rotation = 0
 
         while True:
@@ -157,17 +159,21 @@ class Occlusion_set:
                 print(
                     f"Position: ({current_x:.2f}, {current_y:.2f}), Yaw: {current_yaw:.2f} rad ({np.degrees(current_yaw):.1f}°)"
                 )
-                rgb, depth_image, _, _ = self.cam_0.render(
+                rgb, depth_image, seg_image, _ = self.cam_0.render(
                     rgb=True, depth=True, segmentation=True
                 )
 
                 cv2.imwrite(
-                    f"/home/irol/workspace/genesis_ai/src/output/{args.target_name}/rgb_map/{count//5}.png",
+                    f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/target/rgb/{count//5}.png",
                     cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
                 )
                 np.save(
-                    f"/home/irol/workspace/genesis_ai/src/output/{args.target_name}/depth_map/{count//5}.npy",
+                    f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/target/depth/{count//5}.npy",
                     depth_image,
+                )
+                cv2.imwrite(
+                    f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/target/seg/{count//5}.png",
+                    seg_image * 15,
                 )
                 current_rotation += 1
 

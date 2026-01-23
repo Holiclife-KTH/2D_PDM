@@ -18,19 +18,19 @@ parser.add_argument("--num_images", type=int, default=1, help="Number of scenes"
 args, unknown = parser.parse_known_args()
 
 PEN = {
-    f"pen_{i}": f"/home/irol/workspace/genesis_ai/src/asset/USD/pen/Collected_pen_{i}/pen_{i}.usdc"
+    f"pen_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/pen/Collected_pen_{i}/pen_{i}.usdc"
     for i in range(1, 5)
 }
 ERASER = {
-    f"eraser_{i}": f"/home/irol/workspace/genesis_ai/src/asset/USD/eraser/Collected_eraser_{i}/eraser_{i}.usdc"
-    for i in range(1, 5)
+    f"eraser_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/eraser/Collected_eraser_{i}/eraser_{i}.usdc"
+    for i in range(1, 5) if i != 2
 }
 BOOK = {
-    f"book_{i}": f"/home/irol/workspace/genesis_ai/src/asset/USD/book/Collected_book_{i}/book_{i}.usdc"
+    f"book_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/book/Collected_book_{i}/book_{i}.usdc"
     for i in range(1, 5)
 }
 NOTEBOOK = {
-    f"notebook_{i}": f"/home/irol/workspace/genesis_ai/src/asset/USD/notebook/Collected_notebook_{i}/notebook_{i}.usdc"
+    f"notebook_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/notebook/Collected_notebook_{i}/notebook_{i}.usdc"
     for i in range(1, 5)
 }
 
@@ -46,7 +46,7 @@ WORKSPACE_BOUNDS = {"x": [-0.25, 0.25], "y": [-0.25, 0.25], "z": [0.2, 0.35]}
 
 
 class Cluttered_Scene_Generator:
-    path = f"/home/irol/workspace/genesis_ai/src/output/{args.target_name}"
+    path = f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}"
     if not os.path.exists(path + "/rgb"):
         os.makedirs(path + "/rgb")
     if not os.path.exists(path + "/depth"):
@@ -58,9 +58,19 @@ class Cluttered_Scene_Generator:
 
         self.scene = gs.Scene(
             show_viewer=False,
-            rigid_options=gs.options.RigidOptions(
-                dt=0.001,
+            sim_options=gs.options.SimOptions(
+                dt=1e-2,
+                substeps=2,
             ),
+            rigid_options=gs.options.RigidOptions(
+                dt=1e-3,
+                constraint_solver=gs.constraint_solver.Newton,
+                tolerance=1e-7,
+                iterations=200,
+                ls_iterations=200,
+                max_collision_pairs=200,
+        
+        ),
             viewer_options=gs.options.ViewerOptions(
                 res=(1920, 1080),
                 camera_pos=(8.5, 0.0, 4.5),
@@ -99,7 +109,7 @@ class Cluttered_Scene_Generator:
 
         self.workspace = self.scene.add_entity(
             morph=gs.morphs.Mesh(
-                file="/home/irol/workspace/genesis_ai/src/asset/USD/drawer.obj",
+                file="/home/irol/workspace/2D_PDM/src/asset/USD/drawer.obj",
                 scale=1.0,
                 pos=(0.0, 0.0, 0.05),
                 euler=(0.0, 0.0, 0.0),
@@ -188,58 +198,97 @@ class Cluttered_Scene_Generator:
         for _ in range(20):
             self.scene.step()
 
-    def generate_one_scene(self, idx):
+    def generate_one_scene(self, idx, start_num=0):
         target_name = args.target_name
         print(f"--- Scene {idx+1}: Target {target_name} ---")
         # self.reset_items()
 
-        # 1. Target 배치 및 안정화
-        target_obj: gs.entities.RigidEntity = self.items[target_name]
-        target_pos = np.array(
-            [random.uniform(-0.1, 0.1), random.uniform(-0.1, 0.1), 0.2]
-        )
-        target_pos = torch.tensor(target_pos, device="cuda:0")
-        target_obj.set_pos(target_pos)
-        self.wait_for_stabilization(max_steps=120)
+        if random.random() < 0.9:
+            # 1. Target 배치 및 안정화
+            target_obj: gs.entities.RigidEntity = self.items[target_name]
+            target_pos = np.array(
+                [random.uniform(-0.1, 0.1), random.uniform(-0.1, 0.1), 0.2]
+            )
+            target_pos = torch.tensor(target_pos, device="cuda:0")
+            target_obj.set_pos(target_pos)
+            self.wait_for_stabilization(max_steps=120)
 
-        # self.wait_for_stabilization(max_steps=120)
+            # 2. 주변 물체 순차 투하
+            target_type = self.item_types[target_name]
+            score_groups = defaultdict(list)
+            for k, v in self.item_types.items():
+                if k == target_name:
+                    continue
+                score = SIMILARITY_MAP[target_type][v]
+                score_groups[score].append(k)
 
-        # 2. 주변 물체 순차 투하
-        target_type = self.item_types[target_name]
-        score_groups = defaultdict(list)
-        for k, v in self.item_types.items():
-            if k == target_name:
-                continue
-            score = SIMILARITY_MAP[target_type][v]
-            score_groups[score].append(k)
+            for score in sorted(score_groups.keys(), reverse=True):
+                group = score_groups[score]
+                random.shuffle(group)
+                for item_key in group:
+                    obj: gs.entities.RigidEntity = self.items[item_key]
+                    radius = SCORE_TO_RADIUS.get(score, 0.2)
 
-        for score in sorted(score_groups.keys(), reverse=True):
-            group = score_groups[score]
-            random.shuffle(group)
-            for item_key in group:
-                obj: gs.entities.RigidEntity = self.items[item_key]
-                radius = SCORE_TO_RADIUS.get(score, 0.2)
+                    # 가우시안 대신 원형 범위 내 스폰 로직
+                    r = radius * torch.sqrt(torch.rand(1))
+                    theta = torch.rand(1) * 2 * torch.pi
+                    cur_t_pos = target_obj.get_pos()
+                    spawn_pos = torch.tensor(
+                        [
+                            torch.clip(cur_t_pos[0] + r * torch.cos(theta), -0.3, 0.3),
+                            torch.clip(cur_t_pos[1] + r * torch.sin(theta), -0.3, 0.3),
+                            random.uniform(0.15, 0.3),
+                        ]
+                    )
 
-                # 가우시안 대신 원형 범위 내 스폰 로직
-                r = radius * torch.sqrt(torch.rand(1))
-                theta = torch.rand(1) * 2 * torch.pi
-                cur_t_pos = target_obj.get_pos()
-                spawn_pos = torch.tensor(
-                    [
-                        torch.clip(cur_t_pos[0] + r * torch.cos(theta), -0.3, 0.3),
-                        torch.clip(cur_t_pos[1] + r * torch.sin(theta), -0.3, 0.3),
-                        random.uniform(0.15, 0.3),
-                    ]
-                )
+                    obj.set_pos(spawn_pos)
+                    # 물체 하나 투하할 때마다 최소한의 물리 안정화
+                    self.wait_for_stabilization(max_steps=60)
+        else:
+            # 10% case: spawn others first
+            target_pos = np.array(
+                [random.uniform(-0.1, 0.1), random.uniform(-0.1, 0.1), 0.2]
+            )
+            target_type = self.item_types[target_name]
+            score_groups = defaultdict(list)
+            for k, v in self.item_types.items():
+                if k == target_name:
+                    continue
+                score = SIMILARITY_MAP[target_type][v]
+                score_groups[score].append(k)
 
-                obj.set_pos(spawn_pos)
-                # 물체 하나 투하할 때마다 최소한의 물리 안정화
-                self.wait_for_stabilization(max_steps=60)
+            for score in sorted(score_groups.keys(), reverse=True):
+                group = score_groups[score]
+                random.shuffle(group)
+                for item_key in group:
+                    obj: gs.entities.RigidEntity = self.items[item_key]
+                    radius = SCORE_TO_RADIUS.get(score, 0.2)
+
+                    # 가우시안 대신 원형 범위 내 스폰 로직
+                    r = radius * torch.sqrt(torch.rand(1))
+                    theta = torch.rand(1) * 2 * torch.pi
+                    # Spawn randomly in workspace bounds
+                    spawn_pos = torch.tensor(
+                        [
+                            torch.clip(target_pos[0] + r * torch.cos(theta), -0.3, 0.3),
+                            torch.clip(target_pos[1] + r * torch.sin(theta), -0.3, 0.3),
+                            random.uniform(0.15, 0.3),
+                        ]
+                    )
+                    obj.set_pos(spawn_pos)
+                    self.wait_for_stabilization(max_steps=60)
+
+            # Then place target
+            target_obj: gs.entities.RigidEntity = self.items[target_name]
+            
+            target_pos = torch.tensor(target_pos, device="cuda:0")
+            target_obj.set_pos(target_pos)
+            self.wait_for_stabilization(max_steps=120)
 
         # 3. 모든 물체 투하 후 최종 안정화
         print("Final stabilizing...")
         self.wait_for_stabilization(max_steps=300)
-        print(f"Scene {idx+1} Stabilized.")
+        print(f"Scene {start_num + idx+1} Stabilized.")
 
         for _ in range(500):
             self.scene.step()
@@ -249,16 +298,16 @@ class Cluttered_Scene_Generator:
         )
 
         cv2.imwrite(
-            f"/home/irol/workspace/genesis_ai/src/output/{target_name}/rgb/{idx+1:03d}.png",
+            f"/home/irol/workspace/2D_PDM/src/output/{target_name}/rgb/{start_num + idx+1:03d}.png",
             cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
         )
         # Depth 이미지는 .npy 포맷으로 저장하여 원본 데이터 보존
         np.save(
-            f"/home/irol/workspace/genesis_ai/src/output/{target_name}/depth/{idx+1:03d}.npy",
+            f"/home/irol/workspace/2D_PDM/src/output/{target_name}/depth/{start_num + idx+1:03d}.npy",
             depth_image,
         )
         cv2.imwrite(
-            f"/home/irol/workspace/genesis_ai/src/output/{target_name}/seg/{idx+1:03d}.png",
+            f"/home/irol/workspace/2D_PDM/src/output/{target_name}/seg/{start_num + idx+1:03d}.png",
             seg_image * 15,
         )
         self.reset_items()
@@ -267,7 +316,7 @@ class Cluttered_Scene_Generator:
         seg_json = json.dumps(self.segmentation_idx)
 
         with open(
-            f"/home/irol/workspace/genesis_ai/src/output/{args.target_name}/seg/segmentation_idx.json",
+            f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/seg/segmentation_idx.json",
             "w",
         ) as f:
             f.write(seg_json)
@@ -277,11 +326,12 @@ class Cluttered_Scene_Generator:
 
 
 def main():
-    gs.init(precision="32", logging_level="info", backend=gs.gpu)
+    gs.init(precision="64", logging_level="info", backend=gs.gpu)
 
     generator = Cluttered_Scene_Generator()
+    start_num = 100-args.num_images
     for i in range(args.num_images):
-        generator.generate_one_scene(i)
+        generator.generate_one_scene(i, start_num)
 
     generator.save_segmentation_idx()
 

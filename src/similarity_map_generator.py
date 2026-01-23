@@ -47,7 +47,7 @@ class Similarity_Map_Generator:
         self.similarity_map = SIMILARITY_MAP
         self.target_name = args.target_name
         self.dataset_folder_path = os.path.join(
-            "/home/irol/workspace/genesis_ai/src/output", self.target_name
+            "/home/irol/workspace/2D_PDM/src/output", self.target_name
         )
         if not os.path.exists(self.dataset_folder_path):
             raise Exception(

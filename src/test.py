@@ -3,7 +3,7 @@ import cv2
 
 # Load the depth image
 depth_image = np.load(
-    "/home/irol/workspace/genesis_ai/src/output/notebook_4/scene_001_depth.npy"
+    "/home/irol/workspace/2D_PDM/src/output/pen_1/scene/depth_dis_map/depthmap_001.npy"
 )
 
 print(f"Depth image shape: {depth_image.shape}")
@@ -28,3 +28,13 @@ cv2.imshow("Depth Image (Colored)", depth_colored)
 print("Press any key to close...")
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
+
+# import cv2
+# import numpy as np
+# img = cv2.imread('src/output/pen_1/target/seg/1.png', cv2.IMREAD_UNCHANGED)
+# print('Image shape:', img.shape)
+# print('Image dtype:', img.dtype)
+# print('Unique values:', np.unique(img))
+# print('First 5x5 pixels:')
+# print(img[0:5, 0:5])
