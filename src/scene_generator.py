@@ -23,7 +23,7 @@ PEN = {
 }
 ERASER = {
     f"eraser_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/eraser/Collected_eraser_{i}/eraser_{i}.usdc"
-    for i in range(1, 5) if i != 2
+    for i in range(1, 5) 
 }
 BOOK = {
     f"book_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/book/Collected_book_{i}/book_{i}.usdc"
@@ -33,7 +33,6 @@ NOTEBOOK = {
     f"notebook_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/notebook/Collected_notebook_{i}/notebook_{i}.usdc"
     for i in range(1, 5)
 }
-
 SIMILARITY_MAP = {
     "pen": {"pen": 0.8, "eraser": 0.5, "book": 0.2, "notebook": 0.2},
     "eraser": {"pen": 0.5, "eraser": 0.8, "book": 0.2, "notebook": 0.2},
@@ -66,9 +65,9 @@ class Cluttered_Scene_Generator:
                 dt=1e-3,
                 constraint_solver=gs.constraint_solver.Newton,
                 tolerance=1e-7,
-                iterations=200,
-                ls_iterations=200,
-                max_collision_pairs=200,
+                iterations=300,
+                ls_iterations=300,
+                max_collision_pairs=300,
         
         ),
             viewer_options=gs.options.ViewerOptions(
@@ -78,7 +77,7 @@ class Cluttered_Scene_Generator:
                 camera_fov=50,
             ),
             renderer=gs.renderers.RayTracer(  # type: ignore
-                env_surface=gs.surfaces.Emission(
+            env_surface=gs.surfaces.Emission(
                     emissive_texture=gs.textures.ImageTexture(
                         image_path="textures/indoor_bright.png",
                     ),
@@ -86,11 +85,7 @@ class Cluttered_Scene_Generator:
                 env_radius=15.0,
                 env_euler=(0, 0, 180),
                 lights=[
-                    {
-                        "pos": (0.0, 0.0, 10.0),
-                        "radius": 20.0,
-                        "color": (100.0, 100.0, 100.0),
-                    },
+                    {"pos": (0.0, 0.0, 10.0), "radius": 3.0, "color": (15.0, 15.0, 15.0)},
                 ],
             ),
         )
@@ -296,7 +291,6 @@ class Cluttered_Scene_Generator:
         rgb, depth_image, seg_image, _ = self.cam_0.render(
             rgb=True, depth=True, segmentation=True
         )
-
         cv2.imwrite(
             f"/home/irol/workspace/2D_PDM/src/output/{target_name}/rgb/{start_num + idx+1:03d}.png",
             cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
