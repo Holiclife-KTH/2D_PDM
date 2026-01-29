@@ -9,6 +9,10 @@ from collections import defaultdict
 import json
 from genesis.utils.geom import quat_to_xyz, xyz_to_quat
 
+# Base directory (directory of this script)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 # 1. argparse 설정
 parser = argparse.ArgumentParser(
     description="Isaac Sim Dynamic Stabilization Generator"
@@ -18,31 +22,36 @@ args, unknown = parser.parse_known_args()
 
 
 PEN = {
-    f"pen_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/pen/Collected_pen_{i}/pen_{i}.usdc"
+    f"pen_{i}": os.path.join(
+        BASE_DIR, "asset", "USD", "pen", f"Collected_pen_{i}", f"pen_{i}.usdc"
+    )
     for i in range(1, 5)
 }
 ERASER = {
-    f"eraser_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/eraser/Collected_eraser_{i}/eraser_{i}.usdc"
+    f"eraser_{i}": os.path.join(
+        BASE_DIR, "asset", "USD", "eraser", f"Collected_eraser_{i}", f"eraser_{i}.usdc"
+    )
     for i in range(1, 5)
 }
 BOOK = {
-    f"book_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/book/Collected_book_{i}/book_{i}.usdc"
+    f"book_{i}": os.path.join(
+        BASE_DIR, "asset", "USD", "book", f"Collected_book_{i}", f"book_{i}.usdc"
+    )
     for i in range(1, 5)
 }
 NOTEBOOK = {
-    f"notebook_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/notebook/Collected_notebook_{i}/notebook_{i}.usdc"
+    f"notebook_{i}": os.path.join(
+        BASE_DIR, "asset", "USD", "notebook", f"Collected_notebook_{i}", f"notebook_{i}.usdc"
+    )
     for i in range(1, 5)
 }
 
 
 class Occlusion_set:
-    path = f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/target"
-    if not os.path.exists(path + "/depth"):
-        os.makedirs(path + "/depth")
-    if not os.path.exists(path + "/rgb"):
-        os.makedirs(path + "/rgb")
-    if not os.path.exists(path + "/seg"):
-        os.makedirs(path + "/seg")
+    path = os.path.join(BASE_DIR, "output", args.target_name, "target")
+    os.makedirs(os.path.join(path, "depth"), exist_ok=True)
+    os.makedirs(os.path.join(path, "rgb"), exist_ok=True)
+    os.makedirs(os.path.join(path, "seg"), exist_ok=True)
 
     def __init__(self):
         self.scene = gs.Scene(
@@ -84,7 +93,7 @@ class Occlusion_set:
 
         self.workspace = self.scene.add_entity(
             morph=gs.morphs.Mesh(
-                file="/home/irol/workspace/2D_PDM/src/asset/USD/drawer.obj", # change to own path
+                file=os.path.join(BASE_DIR, "asset", "USD", "drawer.obj"),
                 scale=1.0,
                 pos=(0.0, 0.0, 0.02),
                 euler=(0.0, 0.0, 0.0),
@@ -165,15 +174,15 @@ class Occlusion_set:
                 )
 
                 cv2.imwrite(
-                    f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/target/rgb/{count//5}.png",
+                    os.path.join(self.path, "rgb", f"{count//5}.png"),
                     cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
                 )
                 np.save(
-                    f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/target/depth/{count//5}.npy",
+                    os.path.join(self.path, "depth", f"{count//5}.npy"),
                     depth_image,
                 )
                 cv2.imwrite(
-                    f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/target/seg/{count//5}.png",
+                    os.path.join(self.path, "seg", f"{count//5}.png"),
                     seg_image * 15,
                 )
                 current_rotation += 1

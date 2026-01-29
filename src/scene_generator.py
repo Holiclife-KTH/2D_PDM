@@ -9,6 +9,9 @@ import random
 from collections import defaultdict
 import json
 
+# Base directory (directory of this script)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # 1. argparse 설정
 parser = argparse.ArgumentParser(
     description="Isaac Sim Dynamic Stabilization Generator"
@@ -18,19 +21,27 @@ parser.add_argument("--num_images", type=int, default=1, help="Number of scenes"
 args, unknown = parser.parse_known_args()
 
 PEN = {
-    f"pen_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/pen/Collected_pen_{i}/pen_{i}.usdc"
+    f"pen_{i}": os.path.join(
+        BASE_DIR, "asset", "USD", "pen", f"Collected_pen_{i}", f"pen_{i}.usdc"
+    )
     for i in range(1, 5)
 }
 ERASER = {
-    f"eraser_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/eraser/Collected_eraser_{i}/eraser_{i}.usdc"
-    for i in range(1, 5) 
+    f"eraser_{i}": os.path.join(
+        BASE_DIR, "asset", "USD", "eraser", f"Collected_eraser_{i}", f"eraser_{i}.usdc"
+    )
+    for i in range(1, 5)
 }
 BOOK = {
-    f"book_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/book/Collected_book_{i}/book_{i}.usdc"
+    f"book_{i}": os.path.join(
+        BASE_DIR, "asset", "USD", "book", f"Collected_book_{i}", f"book_{i}.usdc"
+    )
     for i in range(1, 5)
 }
 NOTEBOOK = {
-    f"notebook_{i}": f"/home/irol/workspace/2D_PDM/src/asset/USD/notebook/Collected_notebook_{i}/notebook_{i}.usdc"
+    f"notebook_{i}": os.path.join(
+        BASE_DIR, "asset", "USD", "notebook", f"Collected_notebook_{i}", f"notebook_{i}.usdc"
+    )
     for i in range(1, 5)
 }
 SIMILARITY_MAP = {
@@ -45,13 +56,10 @@ WORKSPACE_BOUNDS = {"x": [-0.25, 0.25], "y": [-0.25, 0.25], "z": [0.2, 0.35]}
 
 
 class Cluttered_Scene_Generator:
-    path = f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}"
-    if not os.path.exists(path + "/rgb"):
-        os.makedirs(path + "/rgb")
-    if not os.path.exists(path + "/depth"):
-        os.makedirs(path + "/depth")
-    if not os.path.exists(path + "/seg"):
-        os.makedirs(path + "/seg")
+    path = os.path.join(BASE_DIR, "output", args.target_name)
+    os.makedirs(os.path.join(path, "rgb"), exist_ok=True)
+    os.makedirs(os.path.join(path, "depth"), exist_ok=True)
+    os.makedirs(os.path.join(path, "seg"), exist_ok=True)
 
     def __init__(self):
 
@@ -104,7 +112,7 @@ class Cluttered_Scene_Generator:
 
         self.workspace = self.scene.add_entity(
             morph=gs.morphs.Mesh(
-                file="/home/irol/workspace/2D_PDM/src/asset/USD/drawer.obj",
+                file=os.path.join(BASE_DIR, "asset", "USD", "drawer.obj"),
                 scale=1.0,
                 pos=(0.0, 0.0, 0.02),
                 euler=(0.0, 0.0, 0.0),
@@ -292,16 +300,16 @@ class Cluttered_Scene_Generator:
             rgb=True, depth=True, segmentation=True
         )
         cv2.imwrite(
-            f"/home/irol/workspace/2D_PDM/src/output/{target_name}/rgb/{start_num + idx+1:03d}.png",
+            os.path.join(self.path, "rgb", f"{start_num + idx+1:03d}.png"),
             cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
         )
         # Depth 이미지는 .npy 포맷으로 저장하여 원본 데이터 보존
         np.save(
-            f"/home/irol/workspace/2D_PDM/src/output/{target_name}/depth/{start_num + idx+1:03d}.npy",
+            os.path.join(self.path, "depth", f"{start_num + idx+1:03d}.npy"),
             depth_image,
         )
         cv2.imwrite(
-            f"/home/irol/workspace/2D_PDM/src/output/{target_name}/seg/{start_num + idx+1:03d}.png",
+            os.path.join(self.path, "seg", f"{start_num + idx+1:03d}.png"),
             seg_image * 15,
         )
         self.reset_items()
@@ -309,10 +317,7 @@ class Cluttered_Scene_Generator:
     def save_segmentation_idx(self):
         seg_json = json.dumps(self.segmentation_idx)
 
-        with open(
-            f"/home/irol/workspace/2D_PDM/src/output/{args.target_name}/seg/segmentation_idx.json",
-            "w",
-        ) as f:
+        with open(os.path.join(self.path, "seg", "segmentation_idx.json"), "w") as f:
             f.write(seg_json)
 
     def __del__(self):

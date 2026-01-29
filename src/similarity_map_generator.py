@@ -15,6 +15,9 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--target_name", type=str, required=True, help="Target USD name")
 args, unknown = parser.parse_known_args()
 
+# Base directory (directory of this script)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 SIMILARITY_MAP = {
     "pen": {"pen": 0.8, "eraser": 0.5, "book": 0.2, "notebook": 0.2},
     "eraser": {"pen": 0.5, "eraser": 0.8, "book": 0.2, "notebook": 0.2},
@@ -46,27 +49,25 @@ class Similarity_Map_Generator:
     def __init__(self):
         self.similarity_map = SIMILARITY_MAP
         self.target_name = args.target_name
-        self.dataset_folder_path = os.path.join(
-            "/home/irol/workspace/2D_PDM/src/output", self.target_name
-        )
+        self.dataset_folder_path = os.path.join(BASE_DIR, "output", self.target_name)
         if not os.path.exists(self.dataset_folder_path):
             raise Exception(
                 f"Dataset folder does not exist: {self.dataset_folder_path}"
             )
 
         with open(
-            self.dataset_folder_path + "/seg" + "/segmentation_idx.json", "r"
+            os.path.join(self.dataset_folder_path, "seg", "segmentation_idx.json"),
+            "r",
         ) as f:
             self.segmentation_idx = json.load(f)
 
     def get_segmentation_images(self):
         """Get list of all segmentation images in the folder"""
         seg_images = []
-        for filename in sorted(os.listdir(self.dataset_folder_path + "/seg")):
+        seg_dir = os.path.join(self.dataset_folder_path, "seg")
+        for filename in sorted(os.listdir(seg_dir)):
             if filename.endswith(".png"):
-                seg_images.append(
-                    os.path.join(self.dataset_folder_path + "/seg", filename)
-                )
+                seg_images.append(os.path.join(seg_dir, filename))
         return seg_images
 
     def check_target_pixels(self, seg_image_path, target_idx):
@@ -176,12 +177,10 @@ class Similarity_Map_Generator:
                 similarity_seg[seg_image == pixel_val] = new_val
 
             # Save similarity segmentation
-            if not os.path.exists(self.dataset_folder_path + "/similarity_map"):
-                os.makedirs(self.dataset_folder_path + "/similarity_map")
+            sim_map_dir = os.path.join(self.dataset_folder_path, "similarity_map")
+            os.makedirs(sim_map_dir, exist_ok=True)
 
-            output_path = (
-                self.dataset_folder_path + "/similarity_map/" + f"{idx+1:03d}.png"
-            )
+            output_path = os.path.join(sim_map_dir, f"{idx+1:03d}.png")
             cv2.imwrite(output_path, similarity_seg)
             print(f"Saved: {output_path}")
 
