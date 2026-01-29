@@ -86,7 +86,7 @@ class Occlusion_set:
             morph=gs.morphs.Mesh(
                 file="/home/irol/workspace/2D_PDM/src/asset/USD/drawer.obj", # change to own path
                 scale=1.0,
-                pos=(0.0, 0.0, 0.05),
+                pos=(0.0, 0.0, 0.02),
                 euler=(0.0, 0.0, 0.0),
             ),
         )
@@ -135,12 +135,13 @@ class Occlusion_set:
         count = 0
         x_min, x_max = -0.17, 0.17
         y_min, y_max = -0.17, 0.17
+        z_max = 0.1
         step = 0.02
 
         # Start position
         current_x = x_max
         current_y = y_max
-        z = 0.07  # Keep z constant
+        z = 0.04  # Keep z constant
 
         # Rotation parameters
         yaw_step = np.pi / 6  # pi/6 radians (30 degrees)
@@ -148,7 +149,7 @@ class Occlusion_set:
         current_rotation = 0
 
         while True:
-            if count % 5 == 0:
+            if count % 2 == 0:
                 # Calculate current yaw angle
                 current_yaw = (current_rotation % num_rotations) * yaw_step
 
@@ -157,7 +158,7 @@ class Occlusion_set:
                 next_euler = torch.tensor([0.0, 0.0, current_yaw], device="cuda:0")
                 next_quat = xyz_to_quat(next_euler)
                 print(
-                    f"Position: ({current_x:.2f}, {current_y:.2f}), Yaw: {current_yaw:.2f} rad ({np.degrees(current_yaw):.1f}°)"
+                    f"Position: ({self.target_prim.get_pos()}), Yaw: {current_yaw:.2f} rad ({np.degrees(current_yaw):.1f}°)"
                 )
                 rgb, depth_image, seg_image, _ = self.cam_0.render(
                     rgb=True, depth=True, segmentation=True
@@ -189,8 +190,11 @@ class Occlusion_set:
 
                         # Check if out of y boundary (finished scanning)
                         if current_y < y_min:
-                            print("Finished scanning the entire workspace")
-                            break
+                            z += 0.03
+                            if z > z_max:
+                                print("Finished scanning the entire workspace")
+                                break
+                            
 
             self.target_prim.set_pos(next_pos)
             self.target_prim.set_quat(next_quat)

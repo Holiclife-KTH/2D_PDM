@@ -106,7 +106,7 @@ class Cluttered_Scene_Generator:
             morph=gs.morphs.Mesh(
                 file="/home/irol/workspace/2D_PDM/src/asset/USD/drawer.obj",
                 scale=1.0,
-                pos=(0.0, 0.0, 0.05),
+                pos=(0.0, 0.0, 0.02),
                 euler=(0.0, 0.0, 0.0),
             ),
         )
@@ -318,7 +318,6 @@ class Cluttered_Scene_Generator:
     def __del__(self):
         self.save_segmentation_idx()
 
-
 def main():
     gs.init(precision="64", logging_level="info", backend=gs.gpu)
 
@@ -328,7 +327,6 @@ def main():
         generator.generate_one_scene(i, start_num)
 
     generator.save_segmentation_idx()
-
 
 if __name__ == "__main__":
     main()
