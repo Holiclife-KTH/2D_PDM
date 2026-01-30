@@ -282,7 +282,7 @@ def process_file(depth_file, similarity_file, output_file):
         output_image = similarity_map
 
         # 255인 경우 target 만 저장
-        combined_map = cv2.addWeighted(depth_map_norm, 0.2, output_image, 0.8, 0) # 0.2, 0.8 비율이 최종 정답 / FCN검증용 1,0, 0.0
+        combined_map = cv2.addWeighted(depth_map_norm, 0.5, output_image, 0.5, 0) # 0.2, 0.8 비율이 최종 정답 / FCN검증용 1,0, 0.0
         combined_map = (combined_map * 0.8).astype(np.uint8) # 0.8이 최종 정답 / FCN검증용 0.9
         combined_map[mask] = 255
         
@@ -292,7 +292,7 @@ def process_file(depth_file, similarity_file, output_file):
         output_image = similarity_map
 
         # 두 맵 결합 (50%씩 반영)
-        combined_map = cv2.addWeighted(depth_map_norm, 0.2, output_image, 0.8, 0) # 0.2, 0.8 비율이 최종 정답 / FCN검증용 1,0, 0.0
+        combined_map = cv2.addWeighted(depth_map_norm, 0.5, output_image, 0.5, 0) # 0.2, 0.8 비율이 최종 정답 / FCN검증용 1,0, 0.0
     
 
     
@@ -313,7 +313,7 @@ def process_all_maps(folder_path: str):
         num_files (int): 처리할 파일 수 (기본값: 1000).
     """
     depth_distribution_path = os.path.join(folder_path, args_cli.target_object, "scene","depth_dis_map")
-    similarity_map_path = os.path.join(folder_path, args_cli.target_object, "scene", "mask")
+    similarity_map_path = os.path.join(folder_path, args_cli.target_object, "scene", "similarity_map")
     output_folder = os.path.join(folder_path, args_cli.target_object, "scene", "distribution_map")
     
     depth_distribution_files = sorted([f for f in os.listdir(depth_distribution_path) if f.endswith(".npy")])
@@ -323,15 +323,19 @@ def process_all_maps(folder_path: str):
     os.makedirs(output_folder, exist_ok=True)
     
     if len(depth_distribution_files) != len(similarity_map_files):
-        raise ValueError("Number of depth distribution map files and similarity map files do not match.")
+        print(
+            f"Warning: depth files ({len(depth_distribution_files)}) and similarity files ({len(similarity_map_files)}) count mismatch - pairing up to the shortest list."
+        )
 
-    for i in range(1, len(depth_distribution_files)+1):
-        # 파일 이름 생성
-        depth_file = f"{depth_distribution_path}/01_{i}.npy"
-        similarity_file = f"{similarity_map_path}/mask_{args_cli.target_object}_frame_{i}.png"
-        output_file = f"{output_folder}/01_{i}.png"
+    # Iterate over sorted file lists to handle different filename patterns
+    for depth_name, sim_name in zip(depth_distribution_files, similarity_map_files):
+        depth_file = os.path.join(depth_distribution_path, depth_name)
+        similarity_file = os.path.join(similarity_map_path, sim_name)
 
-        # 파일 처리
+        # derive output filename from depth file name (replace extension with .png)
+        out_name = os.path.splitext(depth_name)[0] + ".png"
+        output_file = os.path.join(output_folder, out_name)
+
         process_file(depth_file, similarity_file, output_file)
 
     print("Distribution map 생성 완료!")
@@ -340,8 +344,9 @@ def process_all_maps(folder_path: str):
 if __name__ == "__main__":
     args_cli = parser.parse_args()
     # 이미지 폴더 경로
-    folder_path = "/home/irol/workspace/2D_PDM/src/output"
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    folder_path = os.path.join(BASE_DIR, "output")
     # combine_all_images(folder_path=folder_path, obj_type="scene")
     # combine_all_images(folder_path=folder_path, obj_type="target")
-    create_depth_distribution_map(folder_path=folder_path, visualization=False, save=args_cli.save)
-    # process_all_maps(folder_path=folder_path)
+    # create_depth_distribution_map(folder_path=folder_path, visualization=False, save=args_cli.save)
+    process_all_maps(folder_path=folder_path)

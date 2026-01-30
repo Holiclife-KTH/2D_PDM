@@ -25,6 +25,8 @@ SIMILARITY_MAP = {
     "notebook": {"pen": 0.2, "eraser": 0.2, "book": 0.5, "notebook": 0.8},
 }
 
+SEGEMENTATION_PIXEL_COUNT = {"pen_1": 531, "pen_2": 518, "pen_3": 589, "pen_4": 651, "eraser_1": 646, "eraser_2": 581, "eraser_3": 1385, "eraser_4": 445, "book_1": 14926, "book_2": 10030, "book_3": 26364, "book_4": 14352, "notebook_1": 3833, "notebook_2": 15892, "notebook_3": 1672, "notebook_4": 3933}
+
 ITEM_CATEGORIES = {
     "pen_1": "pen",
     "pen_2": "pen",
@@ -49,7 +51,7 @@ class Similarity_Map_Generator:
     def __init__(self):
         self.similarity_map = SIMILARITY_MAP
         self.target_name = args.target_name
-        self.dataset_folder_path = os.path.join(BASE_DIR, "output", self.target_name)
+        self.dataset_folder_path = os.path.join(BASE_DIR, "output", self.target_name, "scene")
         if not os.path.exists(self.dataset_folder_path):
             raise Exception(
                 f"Dataset folder does not exist: {self.dataset_folder_path}"
@@ -144,11 +146,28 @@ class Similarity_Map_Generator:
                     similarity_seg[seg_image == pixel_val] = 0
                     continue
 
+                # Determine integer segmentation index (pixel values are saved as idx*15)
+                idx_key = int(pixel_val) // 15
+
                 # Get item name for this pixel value
-                item_name = idx_to_item.get(pixel_val / 15)
+                item_name = idx_to_item.get(idx_key)
 
                 if item_name is None:
                     # Unknown item, set to 0
+                    similarity_seg[seg_image == pixel_val] = 0
+                    continue
+
+                # Count observed pixels for this item in the image
+                observed_count = int(np.sum(seg_image == pixel_val))
+
+                # Get expected (reference) pixel count for this item, if available
+                ref_count = SEGEMENTATION_PIXEL_COUNT.get(item_name)
+
+                # If reference is known and observed is too small, skip mapping (hard to recognize)
+                if ref_count is not None and observed_count < 0.45 * ref_count:
+                    print(
+                        f"  Skipping {item_name}: observed {observed_count} < 0.45 * ref ({ref_count})"
+                    )
                     similarity_seg[seg_image == pixel_val] = 0
                     continue
 

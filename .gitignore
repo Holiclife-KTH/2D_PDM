@@ -292,6 +292,9 @@ AMENT_IGNORE
 *.usdc
 *.obj
 
+# files
+*.zip
+
 
 #folder
 /src/asset
