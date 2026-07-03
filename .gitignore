@@ -1,0 +1,30 @@
+# Output images (Isaac Sim 생성 결과물)
+output/
+
+# 이미지 파일 확장자 (루트에 개별 이미지가 생기더라도 무시)
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.tiff
+*.gif
+*.webp
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+.eggs/
+
+# 모델 가중치
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.safetensors
+
+# 기타
+.DS_Store
+*.log
