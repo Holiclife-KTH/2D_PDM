@@ -41,7 +41,7 @@ def extract_intermediate_features(image_path):
 
     inputs = processor(images=original, return_tensors="pt", do_resize=False).to(device)
     with torch.inference_mode():
-        outputs = model(**inputs, output_hidden_states=True)
+        outputs = model(**inputs, output_hidden_states=True, interpolate_pos_encoding=True)
 
     h, w = new_H // patch_size, new_W // patch_size
 

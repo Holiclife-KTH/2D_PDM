@@ -1,0 +1,79 @@
+# Scene ↔ Target 매핑 설정
+#
+# 새 씬 추가 시 이 파일만 수정하면 train/validate 모두에 반영됩니다.
+#
+# scene  : data/scene/<scene>/scene/rgb|seg/ 경로의 키 (Category/Specific)
+# target : data/target/<target>/target.png 경로의 키 (보통 scene과 동일)
+# usd    : 씬 mapping.json 안의 실제 USD 이름 (same-object=1.0 판정용)
+#          (폴더명과 다른 경우: Avocado→Avocado01, SPAM→010_potted_meat_can 등)
+#
+# enabled: false 로 지정하면 해당 씬을 학습/검증에서 제외합니다.
+
+scenes:
+  # ── Fruit ──────────────────────────────────────────────────────────────────
+  - scene:  Fruit/Apple
+    target: Fruit/Apple
+    usd:    Apple
+
+  - scene:  Fruit/Avocado
+    target: Fruit/Avocado
+    usd:    Avocado01
+
+  - scene:  Fruit/Lime
+    target: Fruit/Lime
+    usd:    Lime01
+
+  - scene:  Fruit/Orange
+    target: Fruit/Orange
+    usd:    Orange_03
+
+  # ── Packaged_food ───────────────────────────────────────────────────────────
+  - scene:  Packaged_food/SPAM
+    target: Packaged_food/SPAM
+    usd:    010_potted_meat_can
+
+  - scene:  Packaged_food/Tomato_soup_can
+    target: Packaged_food/Tomato_soup_can
+    usd:    005_tomato_soup_can
+
+  - scene:  Packaged_food/Mustard
+    target: Packaged_food/Mustard
+    usd:    006_mustard_bottle
+
+  - scene:  Packaged_food/Pudding_box
+    target: Packaged_food/Pudding_box
+    usd:    008_pudding_box
+
+  # ── Book ───────────────────────────────────────────────────────────────────
+  - scene:  Book/Book_1
+    target: Book/Book_1
+    usd:    Book_02
+
+  - scene:  Book/Book_2
+    target: Book/Book_2
+    usd:    Book_GetKnowPPU
+
+  - scene:  Book/Book_3
+    target: Book/Book_3
+    usd:    Book_Greener
+
+  - scene:  Book/Book_4
+    target: Book/Book_4
+    usd:    OmniConnect2015    # "OMNI CONNECTS PEOPLE 2015" 책
+
+  # ── Toy ────────────────────────────────────────────────────────────────────
+  - scene:  Toy/Ball
+    target: Toy/Ball
+    usd:    Ball_Walnut
+
+  - scene:  Toy/Gamepad
+    target: Toy/Gamepad
+    usd:    Shield_Controller
+
+  - scene:  Toy/RubixCube
+    target: Toy/RubixCube
+    usd:    RubixCube
+
+  - scene:  Toy/Toy_truck
+    target: Toy/Toy_truck
+    usd:    toy_truck
